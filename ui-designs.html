@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UI Design Graphics — Creative Graphics Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   TOKENS
+   ══════════════════════════════════════════ */
+:root {
+  --s0: #08080a; --s1: #111113; --s2: #19191b; --s3: #222224; --s4: #2b2b2d;
+  --border: rgba(255,255,255,0.06); --border-h: rgba(255,255,255,0.12);
+  --t1: rgba(255,255,255,0.92); --t2: rgba(255,255,255,0.6);
+  --t3: rgba(255,255,255,0.38); --t4: rgba(255,255,255,0.2);
+  --gold: #C4956A; --bronze: #7A5C38; --gold-glow: rgba(196,149,106,0.15);
+  --green: #34d399; --blue: #60a5fa; --amber: #fbbf24;
+  --purple: #a78bfa; --red: #f87171; --cyan: #22d3ee;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-arc: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--s0); color: var(--t1); overflow-x: hidden; cursor: none;
+}
+a { text-decoration: none; color: inherit; cursor: none; }
+button { cursor: none; border: none; background: none; font: inherit; color: inherit; }
+
+/* Cursor */
+.cur-g { position:fixed;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(196,149,106,0.18) 0%,transparent 70%);pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen; }
+.cur-d { position:fixed;width:6px;height:6px;border-radius:50%;background:var(--gold);pointer-events:none;z-index:10001;transform:translate(-50%,-50%); }
+.cur-r { position:fixed;width:36px;height:36px;border-radius:50%;border:1.5px solid var(--gold);pointer-events:none;z-index:10000;transform:translate(-50%,-50%);opacity:0.4;transition:width 0.3s var(--ease),height 0.3s var(--ease),opacity 0.3s; }
+.cur-r.h { width:56px;height:56px;opacity:0.7; }
+@media(hover:none){.cur-g,.cur-d,.cur-r{display:none}body{cursor:auto}}
+
+/* Grain */
+.grain { position:fixed;inset:0;pointer-events:none;z-index:9990;opacity:0.03;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px 128px; }
+
+/* ══════════════════════════════════════════
+   PAGE LAYOUT
+   ══════════════════════════════════════════ */
+.page-header {
+  padding: 80px 42px 42px; max-width: 1400px; margin: 0 auto;
+}
+.page-overline {
+  font-size: 0.55rem; letter-spacing: 0.3em; text-transform: uppercase;
+  color: var(--gold); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 14px;
+}
+.page-overline::before { content: ''; width: 42px; height: 1px; background: var(--gold); }
+.page-title {
+  font-family: 'Cinzel', serif; font-size: clamp(2rem, 4vw, 3.2rem);
+  font-weight: 400; letter-spacing: 0.06em; margin-bottom: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(196,149,106,0.7));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.page-desc {
+  font-family: 'Cormorant Garamond', serif; font-size: 1.2rem;
+  color: var(--t2); font-weight: 300; max-width: 600px; line-height: 1.7;
+}
+
+/* Sections */
+.ui-section {
+  padding: 42px; max-width: 1400px; margin: 0 auto;
+}
+.ui-section-label {
+  font-size: 0.55rem; letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--t4); margin-bottom: 21px;
+}
+
+/* Reveal */
+.reveal { opacity:0;transform:translateY(20px);transition:opacity 0.9s var(--ease),transform 0.9s var(--ease); }
+.reveal.vis { opacity:1;transform:translateY(0); }
+
+/* ══════════════════════════════════════════
+   SHARED UI COMPONENTS
+   ══════════════════════════════════════════ */
+
+/* Window frame */
+.win {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 14px;
+  overflow: hidden; transition: transform 0.6s var(--ease), border-color 0.3s;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.06), 0 4px 8px rgba(0,0,0,0.06),
+    0 8px 16px rgba(0,0,0,0.06), 0 16px 32px rgba(0,0,0,0.08),
+    0 32px 64px rgba(0,0,0,0.12), 0 0 0 1px rgba(255,255,255,0.03);
+}
+.win:hover { border-color: var(--border-h); }
+
+.win-chrome {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; background: var(--s2); border-bottom: 1px solid var(--border);
+}
+.dot { width: 10px; height: 10px; border-radius: 50%; }
+.dot-r { background: #ff5f57; } .dot-y { background: #ffbd2e; } .dot-g { background: #28c840; }
+.win-title { font-size: 0.6rem; color: var(--t4); margin-left: 8px; }
+
+/* URL bar */
+.url-bar {
+  flex: 1; height: 28px; background: var(--s0); border-radius: 6px;
+  border: 1px solid var(--border); display: flex; align-items: center;
+  padding: 0 10px; gap: 6px; margin-left: 8px;
+}
+.url-lock { font-size: 0.55rem; color: var(--green); }
+.url-text { font-size: 0.6rem; color: var(--t3); }
+
+/* Badges */
+.badge {
+  font-size: 0.5rem; padding: 3px 8px; border-radius: 100px;
+  letter-spacing: 0.04em; white-space: nowrap;
+}
+.badge-green { background: rgba(52,211,153,0.1); color: var(--green); }
+.badge-blue { background: rgba(96,165,250,0.1); color: var(--blue); }
+.badge-amber { background: rgba(251,191,36,0.1); color: var(--amber); }
+.badge-purple { background: rgba(167,139,250,0.1); color: var(--purple); }
+.badge-red { background: rgba(248,113,113,0.1); color: var(--red); }
+
+/* Avatars */
+.avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.45rem; color: white; font-weight: 500;
+}
+
+/* Progress */
+.prog { height: 4px; background: var(--s3); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 2px; transition: width 2s var(--ease); width: 0; }
+.prog-fill.go { width: var(--w); }
+
+/* ══════════════════════════════════════════
+   1. FULL DASHBOARD
+   ══════════════════════════════════════════ */
+.dashboard {
+  display: grid; grid-template-columns: 220px 1fr; min-height: 520px;
+}
+.dash-side {
+  background: var(--s2); border-right: 1px solid var(--border); padding: 14px 0;
+}
+.dash-side-logo {
+  font-family: 'Cinzel', serif; font-size: 0.85rem; color: var(--gold);
+  letter-spacing: 0.12em; padding: 0 16px 14px;
+  border-bottom: 1px solid var(--border); margin-bottom: 8px;
+}
+.dash-nav { padding: 0 8px; }
+.dash-nav-item {
+  display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  border-radius: 7px; margin-bottom: 2px; font-size: 0.65rem; color: var(--t3);
+  transition: background 0.2s, color 0.2s;
+}
+.dash-nav-item:hover { background: rgba(255,255,255,0.03); color: var(--t2); }
+.dash-nav-item.active { background: rgba(196,149,106,0.1); color: var(--gold); }
+.dash-nav-dot { width: 5px; height: 5px; border-radius: 50%; }
+.dash-nav-count {
+  margin-left: auto; font-size: 0.5rem; color: var(--t4);
+  background: var(--s3); padding: 1px 6px; border-radius: 100px;
+}
+
+.dash-main { padding: 20px; background: var(--s0); }
+.dash-topbar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px;
+}
+.dash-topbar-title { font-size: 0.9rem; color: var(--t1); font-weight: 500; }
+.dash-topbar-actions { display: flex; gap: 8px; }
+.btn-sm {
+  font-size: 0.6rem; padding: 6px 12px; border-radius: 7px;
+  border: 1px solid var(--border); color: var(--t3);
+  transition: border-color 0.2s, color 0.2s;
+}
+.btn-sm:hover { border-color: var(--border-h); color: var(--t2); }
+.btn-sm.primary { background: var(--bronze); border-color: var(--bronze); color: white; }
+.btn-sm.primary:hover { background: #5C4229; }
+
+/* Metric cards */
+.metric-row {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+}
+.metric-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px;
+}
+.metric-label { font-size: 0.5rem; color: var(--t4); text-transform: uppercase; letter-spacing: 0.08em; }
+.metric-val { font-size: 1.4rem; color: var(--t1); font-weight: 500; margin-top: 4px; }
+.metric-change { font-size: 0.55rem; margin-top: 3px; }
+.metric-change.up { color: var(--green); }
+.metric-change.down { color: var(--red); }
+
+/* Chart area */
+.chart-area { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 20px; }
+.chart-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.chart-title { font-size: 0.7rem; color: var(--t1); }
+.chart-legend { display: flex; gap: 12px; }
+.chart-legend-item { display: flex; align-items: center; gap: 5px; font-size: 0.5rem; color: var(--t4); }
+.chart-legend-dot { width: 6px; height: 6px; border-radius: 2px; }
+.chart-svg { width: 100%; height: 120px; }
+.chart-line { fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 800; stroke-dashoffset: 800; transition: stroke-dashoffset 2.1s var(--ease); }
+.chart-line.drawn { stroke-dashoffset: 0; }
+.chart-fill { opacity: 0; transition: opacity 1s 0.5s; }
+.chart-fill.drawn { opacity: 0.08; }
+
+/* Table */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th {
+  font-size: 0.5rem; color: var(--t4); text-transform: uppercase;
+  letter-spacing: 0.08em; padding: 8px 10px; text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+.data-table td {
+  font-size: 0.6rem; color: var(--t2); padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.data-table tr:last-child td { border-bottom: none; }
+.data-table tr:hover td { background: rgba(255,255,255,0.015); }
+.table-wrap { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.table-head { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+.table-title { font-size: 0.7rem; color: var(--t1); }
+
+/* ══════════════════════════════════════════
+   2. KANBAN BOARD
+   ══════════════════════════════════════════ */
+.kanban { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; padding: 16px; background: var(--s0); }
+.kanban-col { min-height: 360px; }
+.kanban-col-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 4px 10px; margin-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.kanban-col-title { font-size: 0.6rem; color: var(--t2); display: flex; align-items: center; gap: 7px; }
+.kanban-col-count {
+  font-size: 0.45rem; color: var(--t4); background: var(--s3);
+  padding: 2px 6px; border-radius: 100px;
+}
+.kanban-card {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px; margin-bottom: 8px;
+  transition: transform 0.3s var(--ease), border-color 0.2s, box-shadow 0.3s;
+}
+.kanban-card:hover { transform: translateY(-2px); border-color: var(--border-h); box-shadow: 0 8px 20px rgba(0,0,0,0.2); }
+.kanban-card-title { font-size: 0.65rem; color: var(--t1); margin-bottom: 6px; }
+.kanban-card-desc { font-size: 0.5rem; color: var(--t4); line-height: 1.5; margin-bottom: 8px; }
+.kanban-card-footer { display: flex; align-items: center; justify-content: space-between; }
+.kanban-card-avatars { display: flex; margin-left: -4px; }
+.kanban-card-avatars .avatar { width: 20px; height: 20px; font-size: 0.4rem; border: 2px solid var(--s1); margin-left: -4px; }
+.kanban-card-meta { font-size: 0.45rem; color: var(--t4); }
+.kanban-card-tag {
+  display: inline-block; font-size: 0.45rem; padding: 2px 6px;
+  border-radius: 4px; margin-bottom: 6px;
+}
+
+/* ══════════════════════════════════════════
+   3. CRM PIPELINE
+   ══════════════════════════════════════════ */
+.crm { padding: 16px; background: var(--s0); }
+.crm-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 4px; }
+.crm-title { font-size: 0.8rem; color: var(--t1); font-weight: 500; }
+.crm-total { font-size: 0.6rem; color: var(--t3); }
+.crm-total span { color: var(--gold); font-weight: 500; }
+
+.crm-pipeline { display: flex; gap: 2px; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
+.crm-stage {
+  flex: 1; padding: 10px; text-align: center; position: relative;
+  transition: flex 0.6s var(--ease);
+}
+.crm-stage-label { font-size: 0.5rem; color: var(--t3); margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.06em; }
+.crm-stage-val { font-size: 1rem; color: var(--t1); font-weight: 500; }
+.crm-stage-amount { font-size: 0.5rem; color: var(--t4); margin-top: 2px; }
+
+.crm-deals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.crm-deal {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 10px;
+  padding: 14px; display: flex; gap: 12px; align-items: center;
+  transition: border-color 0.2s, transform 0.3s var(--ease);
+}
+.crm-deal:hover { border-color: var(--border-h); transform: translateY(-2px); }
+.crm-deal-avatar { width: 36px; height: 36px; border-radius: 10px; font-size: 0.6rem; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: white; }
+.crm-deal-info { flex: 1; min-width: 0; }
+.crm-deal-name { font-size: 0.7rem; color: var(--t1); margin-bottom: 2px; }
+.crm-deal-company { font-size: 0.5rem; color: var(--t4); }
+.crm-deal-right { text-align: right; }
+.crm-deal-value { font-size: 0.75rem; color: var(--gold); font-weight: 500; }
+.crm-deal-stage { font-size: 0.45rem; color: var(--t4); margin-top: 2px; }
+
+/* ══════════════════════════════════════════
+   4. ANALYTICS BREAKDOWN
+   ══════════════════════════════════════════ */
+.analytics { padding: 20px; background: var(--s0); }
+.analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 14px; }
+.analytics-card { background: var(--s1); border: 1px solid var(--border); border-radius: 10px; padding: 16px; }
+.analytics-card-title { font-size: 0.65rem; color: var(--t2); margin-bottom: 14px; }
+
+/* Bar chart */
+.bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 130px; }
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.bar {
+  width: 100%; border-radius: 4px 4px 0 0;
+  transition: height 1.4s var(--ease); height: 0;
+}
+.bar.go { height: var(--h); }
+.bar-label { font-size: 0.45rem; color: var(--t4); }
+
+/* Donut */
+.donut-wrap { display: flex; align-items: center; gap: 20px; }
+.donut { width: 100px; height: 100px; position: relative; }
+.donut svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.donut-track { fill: none; stroke: var(--s3); stroke-width: 8; }
+.donut-fill {
+  fill: none; stroke-width: 8; stroke-linecap: round;
+  stroke-dasharray: 251; stroke-dashoffset: 251;
+  transition: stroke-dashoffset 2s var(--ease);
+}
+.donut-fill.go { stroke-dashoffset: var(--off); }
+.donut-center {
+  position: absolute; inset: 0; display: flex; align-items: center;
+  justify-content: center; font-size: 1rem; font-weight: 500; color: var(--t1);
+}
+.donut-legend { display: flex; flex-direction: column; gap: 8px; }
+.donut-legend-item { display: flex; align-items: center; gap: 7px; font-size: 0.55rem; color: var(--t3); }
+.donut-legend-dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+
+/* List */
+.stat-list {}
+.stat-list-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 0; border-bottom: 1px solid var(--border);
+}
+.stat-list-item:last-child { border-bottom: none; }
+.stat-list-left { display: flex; align-items: center; gap: 8px; }
+.stat-list-bar { width: 4px; height: 24px; border-radius: 2px; }
+.stat-list-name { font-size: 0.6rem; color: var(--t2); }
+.stat-list-val { font-size: 0.65rem; color: var(--t1); font-weight: 500; }
+.stat-list-pct { font-size: 0.5rem; color: var(--t4); margin-left: 8px; }
+
+/* ══════════════════════════════════════════
+   5. SETTINGS PANEL
+   ══════════════════════════════════════════ */
+.settings { display: grid; grid-template-columns: 200px 1fr; min-height: 420px; }
+.settings-side {
+  background: var(--s2); border-right: 1px solid var(--border); padding: 16px 0;
+}
+.settings-side-title {
+  font-size: 0.7rem; color: var(--t1); font-weight: 500;
+  padding: 0 16px 12px; border-bottom: 1px solid var(--border); margin-bottom: 8px;
+}
+.settings-nav { padding: 0 8px; }
+.settings-nav-item {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+  border-radius: 7px; font-size: 0.6rem; color: var(--t3); margin-bottom: 2px;
+}
+.settings-nav-item.active { background: rgba(196,149,106,0.1); color: var(--gold); }
+
+.settings-main { padding: 20px; background: var(--s0); }
+.settings-section { margin-bottom: 24px; }
+.settings-section-title { font-size: 0.7rem; color: var(--t1); font-weight: 500; margin-bottom: 4px; }
+.settings-section-desc { font-size: 0.5rem; color: var(--t4); margin-bottom: 14px; }
+.settings-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 0; border-bottom: 1px solid var(--border);
+}
+.settings-row:last-child { border-bottom: none; }
+.settings-row-label { font-size: 0.6rem; color: var(--t2); }
+.settings-row-desc { font-size: 0.45rem; color: var(--t4); margin-top: 2px; }
+
+/* Toggle */
+.toggle {
+  width: 36px; height: 20px; border-radius: 100px; background: var(--s3);
+  position: relative; transition: background 0.3s;
+  border: 1px solid var(--border);
+}
+.toggle.on { background: var(--bronze); border-color: var(--bronze); }
+.toggle-knob {
+  width: 14px; height: 14px; border-radius: 50%; background: white;
+  position: absolute; top: 2px; left: 2px;
+  transition: transform 0.3s var(--ease);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+.toggle.on .toggle-knob { transform: translateX(16px); }
+
+/* Input */
+.input-field {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 7px;
+  padding: 7px 10px; font-size: 0.6rem; color: var(--t2);
+  min-width: 200px;
+}
+
+/* Select */
+.select-field {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 7px;
+  padding: 7px 10px; font-size: 0.6rem; color: var(--t2); min-width: 140px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+}
+.select-arrow { font-size: 0.45rem; color: var(--t4); }
+
+/* ══════════════════════════════════════════
+   6. INBOX / NOTIFICATIONS
+   ══════════════════════════════════════════ */
+.inbox { display: grid; grid-template-columns: 280px 1fr; min-height: 460px; }
+.inbox-list {
+  background: var(--s2); border-right: 1px solid var(--border);
+  overflow-y: auto;
+}
+.inbox-list-header {
+  padding: 14px 16px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.inbox-list-title { font-size: 0.7rem; color: var(--t1); font-weight: 500; }
+.inbox-unread { font-size: 0.45rem; background: var(--bronze); color: white; padding: 2px 7px; border-radius: 100px; }
+.inbox-item {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  transition: background 0.15s;
+}
+.inbox-item:hover { background: rgba(255,255,255,0.02); }
+.inbox-item.active { background: rgba(196,149,106,0.06); border-left: 2px solid var(--gold); }
+.inbox-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+.inbox-item-from { font-size: 0.6rem; color: var(--t1); font-weight: 500; }
+.inbox-item-time { font-size: 0.45rem; color: var(--t4); }
+.inbox-item-subject { font-size: 0.55rem; color: var(--t2); margin-bottom: 3px; }
+.inbox-item-preview { font-size: 0.5rem; color: var(--t4); line-height: 1.5; }
+.inbox-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); display: inline-block; margin-right: 5px; }
+
+.inbox-detail { padding: 20px; background: var(--s0); }
+.inbox-detail-header { margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid var(--border); }
+.inbox-detail-subject { font-size: 0.85rem; color: var(--t1); margin-bottom: 8px; }
+.inbox-detail-meta { display: flex; align-items: center; gap: 10px; }
+.inbox-detail-from { font-size: 0.6rem; color: var(--t2); }
+.inbox-detail-date { font-size: 0.5rem; color: var(--t4); }
+.inbox-detail-body { font-size: 0.65rem; color: var(--t3); line-height: 1.8; }
+.inbox-detail-body p { margin-bottom: 12px; }
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .dashboard { grid-template-columns: 1fr; }
+  .dash-side { display: none; }
+  .metric-row { grid-template-columns: repeat(2, 1fr); }
+  .kanban { grid-template-columns: repeat(2, 1fr); }
+  .crm-deals { grid-template-columns: 1fr; }
+  .analytics-grid { grid-template-columns: 1fr; }
+  .settings { grid-template-columns: 1fr; }
+  .settings-side { display: none; }
+  .inbox { grid-template-columns: 1fr; }
+  .inbox-detail { display: none; }
+}
+@media (max-width: 768px) {
+  .ui-section { padding: 28px 16px; }
+  .page-header { padding: 60px 16px 28px; }
+  .metric-row { grid-template-columns: 1fr; }
+  .kanban { grid-template-columns: 1fr; }
+  .crm-pipeline { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<div class="cur-g"></div>
+<div class="cur-d"></div>
+<div class="cur-r"></div>
+<div class="grain"></div>
+
+<!-- SVG Defs -->
+<svg style="position:absolute;width:0;height:0;">
+  <defs>
+    <linearGradient id="gGold" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--gold)" stop-opacity="0.2"/><stop offset="100%" stop-color="var(--gold)" stop-opacity="0"/></linearGradient>
+    <linearGradient id="gBlue" x1="0" x2="0" y1="0" y2="1"><stop offset="0%" stop-color="var(--blue)" stop-opacity="0.2"/><stop offset="100%" stop-color="var(--blue)" stop-opacity="0"/></linearGradient>
+  </defs>
+</svg>
+
+<!-- Header -->
+<div class="page-header">
+  <div class="page-overline">Creative Graphics Research</div>
+  <h1 class="page-title">UI Design Graphics</h1>
+  <p class="page-desc">Complete product interfaces built entirely from code. Each one is a marketing-ready graphic that could go straight onto a landing page.</p>
+</div>
+
+<!-- ═══════════════════════════════════════
+     1. FULL DASHBOARD
+     ═══════════════════════════════════════ -->
+<div class="ui-section">
+  <div class="ui-section-label">01 — Full Dashboard</div>
+  <div class="win reveal" id="dashWin">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/dashboard</span></div>
+    </div>
+    <div class="dashboard">
+      <div class="dash-side">
+        <div class="dash-side-logo">AG</div>
+        <div class="dash-nav">
+          <div class="dash-nav-item active"><div class="dash-nav-dot" style="background:var(--gold);"></div>Dashboard</div>
+          <div class="dash-nav-item"><div class="dash-nav-dot" style="background:var(--blue);"></div>Projects<span class="dash-nav-count">7</span></div>
+          <div class="dash-nav-item"><div class="dash-nav-dot" style="background:var(--green);"></div>Deployments</div>
+          <div class="dash-nav-item"><div class="dash-nav-dot" style="background:var(--purple);"></div>Analytics</div>
+          <div class="dash-nav-item"><div class="dash-nav-dot" style="background:var(--amber);"></div>Team<span class="dash-nav-count">3</span></div>
+          <div class="dash-nav-item"><div class="dash-nav-dot" style="background:var(--t4);"></div>Settings</div>
+        </div>
+      </div>
+      <div class="dash-main">
+        <div class="dash-topbar">
+          <div class="dash-topbar-title">Overview</div>
+          <div class="dash-topbar-actions">
+            <button class="btn-sm">Export</button>
+            <button class="btn-sm">Filter</button>
+            <button class="btn-sm primary">+ New Project</button>
+          </div>
+        </div>
+        <div class="metric-row">
+          <div class="metric-card"><div class="metric-label">Revenue</div><div class="metric-val">$47,850</div><div class="metric-change up">+12.4%</div></div>
+          <div class="metric-card"><div class="metric-label">Active Projects</div><div class="metric-val">7</div><div class="metric-change up">+2 this month</div></div>
+          <div class="metric-card"><div class="metric-label">Quality Score</div><div class="metric-val">98.7</div><div class="metric-change up">+0.3</div></div>
+          <div class="metric-card"><div class="metric-label">Deploy Time</div><div class="metric-val">2.8s</div><div class="metric-change down">-0.4s faster</div></div>
+        </div>
+        <div class="chart-area">
+          <div class="chart-head">
+            <div class="chart-title">Revenue Trend</div>
+            <div class="chart-legend">
+              <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--gold);"></div>Revenue</div>
+              <div class="chart-legend-item"><div class="chart-legend-dot" style="background:var(--blue);"></div>Projected</div>
+            </div>
+          </div>
+          <svg class="chart-svg" viewBox="0 0 700 120" preserveAspectRatio="none">
+            <line x1="0" y1="30" x2="700" y2="30" stroke="var(--border)" stroke-dasharray="4 4"/>
+            <line x1="0" y1="60" x2="700" y2="60" stroke="var(--border)" stroke-dasharray="4 4"/>
+            <line x1="0" y1="90" x2="700" y2="90" stroke="var(--border)" stroke-dasharray="4 4"/>
+            <path class="chart-fill" fill="url(#gGold)" d="M0,100 L58,92 116,82 175,86 233,68 291,72 350,56 408,60 466,42 525,46 583,30 641,24 700,12 700,120 0,120 Z"/>
+            <path class="chart-line" stroke="var(--gold)" d="M0,100 L58,92 116,82 175,86 233,68 291,72 350,56 408,60 466,42 525,46 583,30 641,24 700,12"/>
+            <path class="chart-line" stroke="var(--blue)" style="opacity:0.4;transition-delay:0.3s" d="M0,105 L58,98 116,92 175,88 233,80 291,76 350,68 408,62 466,55 525,48 583,40 641,34 700,26"/>
+          </svg>
+        </div>
+        <div class="table-wrap">
+          <div class="table-head"><div class="table-title">Recent Projects</div><button class="btn-sm">View All</button></div>
+          <table class="data-table">
+            <thead><tr><th>Project</th><th>Status</th><th>Quality</th><th>Progress</th><th>Deploy</th></tr></thead>
+            <tbody>
+              <tr><td style="color:var(--t1)">Lead Hunter Media</td><td><span class="badge badge-green">Deployed</span></td><td>98.7</td><td><div class="prog" style="width:80px;"><div class="prog-fill" style="background:var(--green);--w:100%;"></div></div></td><td style="color:var(--t4)">2 days ago</td></tr>
+              <tr><td style="color:var(--t1)">Rivera's Kitchen</td><td><span class="badge badge-blue">Building</span></td><td>--</td><td><div class="prog" style="width:80px;"><div class="prog-fill" style="background:var(--blue);--w:63%;"></div></div></td><td style="color:var(--t4)">In progress</td></tr>
+              <tr><td style="color:var(--t1)">Stellar Graphics</td><td><span class="badge badge-amber">Review</span></td><td>94.2</td><td><div class="prog" style="width:80px;"><div class="prog-fill" style="background:var(--amber);--w:84%;"></div></div></td><td style="color:var(--t4)">Pending</td></tr>
+              <tr><td style="color:var(--t1)">Nova Fitness</td><td><span class="badge badge-purple">Design</span></td><td>--</td><td><div class="prog" style="width:80px;"><div class="prog-fill" style="background:var(--purple);--w:35%;"></div></div></td><td style="color:var(--t4)">--</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     2. KANBAN BOARD
+     ═══════════════════════════════════════ -->
+<div class="ui-section">
+  <div class="ui-section-label">02 — Kanban Board</div>
+  <div class="win reveal" id="kanbanWin">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/board</span></div>
+    </div>
+    <div class="kanban">
+      <!-- Intake -->
+      <div class="kanban-col">
+        <div class="kanban-col-head">
+          <div class="kanban-col-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--amber);"></div>Intake</div>
+          <div class="kanban-col-count">2</div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-amber">New Client</div>
+          <div class="kanban-card-title">Peak Performance Gym</div>
+          <div class="kanban-card-desc">Fitness studio website with class booking and membership portal</div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars"><div class="avatar" style="background:linear-gradient(135deg,var(--amber),#f59e0b);">QM</div></div>
+            <div class="kanban-card-meta">3 days ago</div>
+          </div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-amber">Intake Pending</div>
+          <div class="kanban-card-title">Bright Smiles Dental</div>
+          <div class="kanban-card-desc">Dental practice website with appointment scheduling</div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars"><div class="avatar" style="background:linear-gradient(135deg,var(--amber),#f59e0b);">QM</div></div>
+            <div class="kanban-card-meta">1 day ago</div>
+          </div>
+        </div>
+      </div>
+      <!-- Building -->
+      <div class="kanban-col">
+        <div class="kanban-col-head">
+          <div class="kanban-col-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--blue);"></div>Building</div>
+          <div class="kanban-col-count">2</div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-blue">DVBL Phase A</div>
+          <div class="kanban-card-title">Rivera's Kitchen</div>
+          <div class="kanban-card-desc">Restaurant with online ordering. Homepage + menu page in progress.</div>
+          <div class="prog" style="margin: 6px 0 8px;"><div class="prog-fill" style="background:var(--blue);--w:63%;"></div></div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars">
+              <div class="avatar" style="background:linear-gradient(135deg,var(--blue),#3b82f6);">CL</div>
+              <div class="avatar" style="background:linear-gradient(135deg,var(--bronze),var(--gold));">QM</div>
+            </div>
+            <div class="kanban-card-meta">4 pages</div>
+          </div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-blue">ICEL Research</div>
+          <div class="kanban-card-title">Nova Fitness</div>
+          <div class="kanban-card-desc">Competitor analysis phase. 5 competitors identified.</div>
+          <div class="prog" style="margin: 6px 0 8px;"><div class="prog-fill" style="background:var(--blue);--w:35%;"></div></div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars"><div class="avatar" style="background:linear-gradient(135deg,var(--blue),#3b82f6);">CL</div></div>
+            <div class="kanban-card-meta">2 pages</div>
+          </div>
+        </div>
+      </div>
+      <!-- Review -->
+      <div class="kanban-col">
+        <div class="kanban-col-head">
+          <div class="kanban-col-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--purple);"></div>Review</div>
+          <div class="kanban-col-count">1</div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-purple">IDWIP Scan</div>
+          <div class="kanban-card-title">Stellar Graphics</div>
+          <div class="kanban-card-desc">Quality validation in progress. DVAR and CURB checks passed.</div>
+          <div class="prog" style="margin: 6px 0 8px;"><div class="prog-fill" style="background:var(--purple);--w:84%;"></div></div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars">
+              <div class="avatar" style="background:linear-gradient(135deg,var(--purple),#8b5cf6);">CL</div>
+              <div class="avatar" style="background:linear-gradient(135deg,var(--bronze),var(--gold));">QM</div>
+            </div>
+            <div class="kanban-card-meta">7 pages</div>
+          </div>
+        </div>
+      </div>
+      <!-- Deployed -->
+      <div class="kanban-col">
+        <div class="kanban-col-head">
+          <div class="kanban-col-title"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);"></div>Deployed</div>
+          <div class="kanban-col-count">2</div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-green">Live</div>
+          <div class="kanban-card-title">Lead Hunter Media</div>
+          <div class="kanban-card-desc">B2B lead generation. Score: 98.7. All gates passed.</div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars"><div class="avatar" style="background:linear-gradient(135deg,var(--green),#10b981);">GL</div></div>
+            <div class="kanban-card-meta">12 pages</div>
+          </div>
+        </div>
+        <div class="kanban-card">
+          <div class="kanban-card-tag badge badge-green">Live</div>
+          <div class="kanban-card-title">Arc Garde</div>
+          <div class="kanban-card-desc">Agency portfolio. Score: 99.1. Flagship project.</div>
+          <div class="kanban-card-footer">
+            <div class="kanban-card-avatars"><div class="avatar" style="background:linear-gradient(135deg,var(--bronze),var(--gold));">QM</div></div>
+            <div class="kanban-card-meta">8 pages</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     3. CRM PIPELINE
+     ═══════════════════════════════════════ -->
+<div class="ui-section">
+  <div class="ui-section-label">03 — CRM Pipeline</div>
+  <div class="win reveal" id="crmWin">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/crm</span></div>
+    </div>
+    <div class="crm">
+      <div class="crm-header">
+        <div class="crm-title">Sales Pipeline</div>
+        <div class="crm-total">Total Value: <span>$284,700</span></div>
+      </div>
+      <div class="crm-pipeline">
+        <div class="crm-stage" style="background:rgba(251,191,36,0.06); flex: 2;"><div class="crm-stage-label">Intake</div><div class="crm-stage-val">2</div><div class="crm-stage-amount">$12,000</div></div>
+        <div class="crm-stage" style="background:rgba(96,165,250,0.06); flex: 3;"><div class="crm-stage-label">Building</div><div class="crm-stage-val">3</div><div class="crm-stage-amount">$89,400</div></div>
+        <div class="crm-stage" style="background:rgba(167,139,250,0.06); flex: 1;"><div class="crm-stage-label">Review</div><div class="crm-stage-val">1</div><div class="crm-stage-amount">$24,000</div></div>
+        <div class="crm-stage" style="background:rgba(52,211,153,0.06); flex: 4;"><div class="crm-stage-label">Deployed</div><div class="crm-stage-val">4</div><div class="crm-stage-amount">$159,300</div></div>
+      </div>
+      <div class="crm-deals">
+        <div class="crm-deal"><div class="crm-deal-avatar" style="background:linear-gradient(135deg,var(--green),#10b981);">GL</div><div class="crm-deal-info"><div class="crm-deal-name">Gus Lopez</div><div class="crm-deal-company">Lead Hunter Media</div></div><div class="crm-deal-right"><div class="crm-deal-value">$47,850</div><div class="crm-deal-stage"><span class="badge badge-green">Deployed</span></div></div></div>
+        <div class="crm-deal"><div class="crm-deal-avatar" style="background:linear-gradient(135deg,var(--blue),#3b82f6);">MR</div><div class="crm-deal-info"><div class="crm-deal-name">Maria Rivera</div><div class="crm-deal-company">Rivera's Kitchen</div></div><div class="crm-deal-right"><div class="crm-deal-value">$32,400</div><div class="crm-deal-stage"><span class="badge badge-blue">Building</span></div></div></div>
+        <div class="crm-deal"><div class="crm-deal-avatar" style="background:linear-gradient(135deg,var(--purple),#8b5cf6);">SG</div><div class="crm-deal-info"><div class="crm-deal-name">Sarah Grant</div><div class="crm-deal-company">Stellar Graphics</div></div><div class="crm-deal-right"><div class="crm-deal-value">$24,000</div><div class="crm-deal-stage"><span class="badge badge-purple">Review</span></div></div></div>
+        <div class="crm-deal"><div class="crm-deal-avatar" style="background:linear-gradient(135deg,var(--amber),#f59e0b);">JK</div><div class="crm-deal-info"><div class="crm-deal-name">James Kim</div><div class="crm-deal-company">Nova Fitness</div></div><div class="crm-deal-right"><div class="crm-deal-value">$28,500</div><div class="crm-deal-stage"><span class="badge badge-blue">Building</span></div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     4. ANALYTICS BREAKDOWN
+     ═══════════════════════════════════════ -->
+<div class="ui-section">
+  <div class="ui-section-label">04 — Analytics Breakdown</div>
+  <div class="win reveal" id="analyticsWin">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/analytics</span></div>
+    </div>
+    <div class="analytics">
+      <div class="analytics-grid">
+        <div class="analytics-card">
+          <div class="analytics-card-title">Monthly Performance</div>
+          <div class="bar-chart" id="barChart">
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.3);--h:40%;"></div><div class="bar-label">Jan</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.3);--h:55%;"></div><div class="bar-label">Feb</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.4);--h:38%;"></div><div class="bar-label">Mar</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.4);--h:65%;"></div><div class="bar-label">Apr</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.5);--h:52%;"></div><div class="bar-label">May</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.5);--h:70%;"></div><div class="bar-label">Jun</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.6);--h:60%;"></div><div class="bar-label">Jul</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.6);--h:78%;"></div><div class="bar-label">Aug</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.7);--h:72%;"></div><div class="bar-label">Sep</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.7);--h:85%;"></div><div class="bar-label">Oct</div></div>
+            <div class="bar-col"><div class="bar" style="background:rgba(196,149,106,0.8);--h:80%;"></div><div class="bar-label">Nov</div></div>
+            <div class="bar-col"><div class="bar" style="background:var(--gold);--h:95%;"></div><div class="bar-label">Dec</div></div>
+          </div>
+        </div>
+        <div>
+          <div class="analytics-card" style="margin-bottom: 14px;">
+            <div class="analytics-card-title">Traffic Source</div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 100 100">
+                  <circle class="donut-track" cx="50" cy="50" r="40"/>
+                  <circle class="donut-fill" cx="50" cy="50" r="40" stroke="var(--gold)" style="--off:88;"/>
+                  <circle class="donut-fill" cx="50" cy="50" r="40" stroke="var(--blue)" style="--off:163; stroke-dasharray: 251; stroke-dashoffset: 251;" transform="rotate(234 50 50)"/>
+                  <circle class="donut-fill" cx="50" cy="50" r="40" stroke="var(--green)" style="--off:213;" transform="rotate(360 50 50)"/>
+                </svg>
+                <div class="donut-center">65%</div>
+              </div>
+              <div class="donut-legend">
+                <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--gold);"></div>Organic (65%)</div>
+                <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--blue);"></div>Referral (22%)</div>
+                <div class="donut-legend-item"><div class="donut-legend-dot" style="background:var(--green);"></div>Direct (13%)</div>
+              </div>
+            </div>
+          </div>
+          <div class="analytics-card">
+            <div class="analytics-card-title">Top Pages</div>
+            <div class="stat-list">
+              <div class="stat-list-item"><div class="stat-list-left"><div class="stat-list-bar" style="background:var(--gold);"></div><div class="stat-list-name">/homepage</div></div><div><span class="stat-list-val">12,847</span><span class="stat-list-pct">42%</span></div></div>
+              <div class="stat-list-item"><div class="stat-list-left"><div class="stat-list-bar" style="background:var(--blue);"></div><div class="stat-list-name">/services</div></div><div><span class="stat-list-val">6,234</span><span class="stat-list-pct">21%</span></div></div>
+              <div class="stat-list-item"><div class="stat-list-left"><div class="stat-list-bar" style="background:var(--green);"></div><div class="stat-list-name">/portfolio</div></div><div><span class="stat-list-val">4,891</span><span class="stat-list-pct">16%</span></div></div>
+              <div class="stat-list-item"><div class="stat-list-left"><div class="stat-list-bar" style="background:var(--purple);"></div><div class="stat-list-name">/contact</div></div><div><span class="stat-list-val">3,102</span><span class="stat-list-pct">10%</span></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     5. SETTINGS PANEL
+     ═══════════════════════════════════════ -->
+<div class="ui-section">
+  <div class="ui-section-label">05 — Settings Panel</div>
+  <div class="win reveal">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/settings</span></div>
+    </div>
+    <div class="settings">
+      <div class="settings-side">
+        <div class="settings-side-title">Settings</div>
+        <div class="settings-nav">
+          <div class="settings-nav-item active">General</div>
+          <div class="settings-nav-item">Deployment</div>
+          <div class="settings-nav-item">Quality Gates</div>
+          <div class="settings-nav-item">Notifications</div>
+          <div class="settings-nav-item">API Keys</div>
+          <div class="settings-nav-item">Team</div>
+          <div class="settings-nav-item">Billing</div>
+        </div>
+      </div>
+      <div class="settings-main">
+        <div class="settings-section">
+          <div class="settings-section-title">Project Defaults</div>
+          <div class="settings-section-desc">Configure default settings for all new projects</div>
+          <div class="settings-row"><div><div class="settings-row-label">Project Name Template</div></div><div class="input-field">{client}-{date}</div></div>
+          <div class="settings-row"><div><div class="settings-row-label">Default Framework</div></div><div class="select-field">Static HTML <span class="select-arrow">v</span></div></div>
+          <div class="settings-row"><div><div class="settings-row-label">Auto-deploy on merge</div><div class="settings-row-desc">Automatically deploy when PRs are merged to main</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+        </div>
+        <div class="settings-section">
+          <div class="settings-section-title">Quality Validation</div>
+          <div class="settings-section-desc">IDWIP validation system configuration</div>
+          <div class="settings-row"><div><div class="settings-row-label">DVAR Check</div><div class="settings-row-desc">Design variation analysis</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+          <div class="settings-row"><div><div class="settings-row-label">CURB Check</div><div class="settings-row-desc">Content uniformity review</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+          <div class="settings-row"><div><div class="settings-row-label">Responsive Check</div><div class="settings-row-desc">Multi-viewport validation</div></div><div class="toggle on"><div class="toggle-knob"></div></div></div>
+          <div class="settings-row"><div><div class="settings-row-label">SEO Validation</div><div class="settings-row-desc">Meta tags and structure analysis</div></div><div class="toggle"><div class="toggle-knob"></div></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     6. INBOX
+     ═══════════════════════════════════════ -->
+<div class="ui-section" style="padding-bottom: 80px;">
+  <div class="ui-section-label">06 — Inbox / Notifications</div>
+  <div class="win reveal">
+    <div class="win-chrome">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <div class="url-bar"><span class="url-lock">&#x1f512;</span><span class="url-text">app.arcgarde.com/inbox</span></div>
+    </div>
+    <div class="inbox">
+      <div class="inbox-list">
+        <div class="inbox-list-header"><div class="inbox-list-title">Inbox</div><div class="inbox-unread">3</div></div>
+        <div class="inbox-item active">
+          <div class="inbox-item-top"><div class="inbox-item-from"><span class="inbox-dot"></span>Gus Lopez</div><div class="inbox-item-time">2m ago</div></div>
+          <div class="inbox-item-subject">Re: Lead Hunter Media Revision</div>
+          <div class="inbox-item-preview">The new hero section looks great. One small change on the testimonial...</div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-item-top"><div class="inbox-item-from"><span class="inbox-dot"></span>System</div><div class="inbox-item-time">14m ago</div></div>
+          <div class="inbox-item-subject">Deployment Complete</div>
+          <div class="inbox-item-preview">stellar-graphics.vercel.app deployed successfully. All quality checks passed.</div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-item-top"><div class="inbox-item-from"><span class="inbox-dot"></span>Claude</div><div class="inbox-item-time">42m ago</div></div>
+          <div class="inbox-item-subject">IDWIP Scan Results</div>
+          <div class="inbox-item-preview">Quality validation complete for Rivera's Kitchen. DVAR: 97.2, CURB: 98.1...</div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-item-top"><div class="inbox-item-from">Maria Rivera</div><div class="inbox-item-time">2h ago</div></div>
+          <div class="inbox-item-subject">Menu Page Feedback</div>
+          <div class="inbox-item-preview">Love the layout! Can we make the prices a bit more prominent and add...</div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-item-top"><div class="inbox-item-from">GitHub</div><div class="inbox-item-time">3h ago</div></div>
+          <div class="inbox-item-subject">PR #42 merged to main</div>
+          <div class="inbox-item-preview">stellar-graphics: Homepage final version merged by Quinten.</div>
+        </div>
+      </div>
+      <div class="inbox-detail">
+        <div class="inbox-detail-header">
+          <div class="inbox-detail-subject">Re: Lead Hunter Media Revision</div>
+          <div class="inbox-detail-meta">
+            <div class="avatar" style="background:linear-gradient(135deg,var(--green),#10b981);width:28px;height:28px;font-size:0.5rem;">GL</div>
+            <div class="inbox-detail-from">Gus Lopez</div>
+            <div class="inbox-detail-date">February 21, 2026 at 3:42 PM</div>
+          </div>
+        </div>
+        <div class="inbox-detail-body">
+          <p>Hey Quinten,</p>
+          <p>The new hero section looks great. The animated counter is a nice touch. One small change on the testimonial section: can we swap the order so the video testimonials come first?</p>
+          <p>Also, the mobile nav is working perfectly now. The hamburger animation is clean.</p>
+          <p>Everything else is approved. Ship it when ready.</p>
+          <p>Thanks,<br>Gus</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  'use strict';
+
+  // Cursor
+  const cg = document.querySelector('.cur-g'), cd = document.querySelector('.cur-d'), cr = document.querySelector('.cur-r');
+  let mx=0,my=0,dx=0,dy=0,rx=0,ry=0,gx=0,gy=0;
+  document.addEventListener('mousemove', e => { mx=e.clientX; my=e.clientY; });
+  (function ac(){
+    dx+=(mx-dx)*0.7;dy+=(my-dy)*0.7;rx+=(mx-rx)*0.14;ry+=(my-ry)*0.14;gx+=(mx-gx)*0.07;gy+=(my-gy)*0.07;
+    cd.style.left=dx+'px';cd.style.top=dy+'px';cr.style.left=rx+'px';cr.style.top=ry+'px';cg.style.left=gx+'px';cg.style.top=gy+'px';
+    requestAnimationFrame(ac);
+  })();
+  document.querySelectorAll('.win, .kanban-card, .crm-deal, button').forEach(el => {
+    el.addEventListener('mouseenter', () => cr.classList.add('h'));
+    el.addEventListener('mouseleave', () => cr.classList.remove('h'));
+  });
+
+  // Reveal + animate
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('vis');
+      // Progress bars
+      e.target.querySelectorAll('.prog-fill').forEach(f => setTimeout(() => f.classList.add('go'), 300));
+      // Chart lines
+      e.target.querySelectorAll('.chart-line').forEach(l => setTimeout(() => l.classList.add('drawn'), 300));
+      e.target.querySelectorAll('.chart-fill').forEach(f => setTimeout(() => f.classList.add('drawn'), 300));
+      // Bars
+      e.target.querySelectorAll('.bar').forEach((b, i) => setTimeout(() => b.classList.add('go'), 100 + i * 60));
+      // Donuts
+      e.target.querySelectorAll('.donut-fill').forEach(d => setTimeout(() => d.classList.add('go'), 400));
+    });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(el => obs.observe(el));
+
+  // Toggle clicks
+  document.querySelectorAll('.toggle').forEach(t => {
+    t.addEventListener('click', () => t.classList.toggle('on'));
+  });
+})();
+</script>
+</body>
+</html>
