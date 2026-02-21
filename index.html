@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Creative Graphics Research</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,300;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════
+   TOKENS
+   ══════════════════════════════════════════ */
+:root {
+  --void: #F7F3EE;
+  --void-dark: #171513;
+  --accent: #7A5C38;
+  --accent-glow: rgba(92, 66, 41, 0.25);
+  --warm-gold: #C4956A;
+  --bronze-light: #D4A574;
+  --surface-0: #0a0a0a;
+  --surface-1: #141414;
+  --surface-2: #1a1a1a;
+  --surface-3: #222222;
+  --ui-border: rgba(255,255,255,0.06);
+  --ui-border-hover: rgba(255,255,255,0.14);
+  --ui-text-primary: rgba(255,255,255,0.92);
+  --ui-text-secondary: rgba(255,255,255,0.6);
+  --ui-text-tertiary: rgba(255,255,255,0.35);
+  --ui-text-muted: rgba(255,255,255,0.2);
+  --status-green: #34d399;
+  --status-blue: #60a5fa;
+  --status-amber: #fbbf24;
+  --status-purple: #a78bfa;
+  --syn-keyword: #c792ea;
+  --syn-string: #a5d6a7;
+  --syn-number: #f78c6c;
+  --syn-comment: #637777;
+  --syn-function: #82aaff;
+  --syn-variable: #d6deeb;
+  --syn-operator: #89ddff;
+  --ease-arc: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-enterprise: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: 'Cormorant Garamond', serif;
+  background: var(--surface-0);
+  color: var(--ui-text-primary);
+  overflow-x: hidden;
+  cursor: none;
+}
+a { text-decoration: none; color: inherit; cursor: none; }
+button { cursor: none; border: none; background: none; font: inherit; }
+
+/* ══════════════════════════════════════════
+   CURSOR
+   ══════════════════════════════════════════ */
+.cursor-glow {
+  position: fixed; width: 350px; height: 350px; border-radius: 50%;
+  background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+  pointer-events: none; z-index: 9999; transform: translate(-50%, -50%);
+  opacity: 0.35; mix-blend-mode: screen;
+}
+.cursor-dot {
+  position: fixed; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--warm-gold); pointer-events: none; z-index: 10001;
+  transform: translate(-50%, -50%);
+}
+.cursor-ring {
+  position: fixed; width: 42px; height: 42px; border-radius: 50%;
+  border: 1.5px solid var(--warm-gold); pointer-events: none; z-index: 10000;
+  transform: translate(-50%, -50%); opacity: 0.5;
+  transition: width 0.3s var(--ease-arc), height 0.3s var(--ease-arc), opacity 0.3s;
+}
+.cursor-ring.hovering { width: 63px; height: 63px; opacity: 0.8; }
+@media (hover: none) {
+  .cursor-glow, .cursor-dot, .cursor-ring { display: none; }
+  body { cursor: auto; }
+}
+
+/* Grain */
+.grain {
+  position: fixed; inset: 0; pointer-events: none; z-index: 9990; opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 128px 128px;
+}
+
+/* ══════════════════════════════════════════
+   SECTIONS
+   ══════════════════════════════════════════ */
+.graphic-section {
+  min-height: 100vh; position: relative; overflow: hidden;
+  display: flex; flex-direction: column; justify-content: center;
+  border-bottom: 1px solid var(--ui-border);
+}
+
+.graphic-label {
+  position: absolute; top: 28px; left: 28px; z-index: 10;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.graphic-number {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+  color: var(--warm-gold); letter-spacing: 0.15em;
+}
+.graphic-name {
+  font-family: 'Cinzel', serif; font-size: 0.8rem;
+  color: var(--ui-text-secondary); letter-spacing: 0.1em;
+}
+.graphic-code-hint {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+  color: var(--ui-text-muted); max-width: 220px; line-height: 1.5; margin-top: 4px;
+}
+
+.reveal {
+  opacity: 0; transform: translateY(20px);
+  transition: opacity 0.9s var(--ease-entrance), transform 0.9s var(--ease-entrance);
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+
+/* ══════════════════════════════════════════
+   1. MESH GRADIENT — "STELLAR"
+   ══════════════════════════════════════════ */
+.mesh-stage {
+  width: 100%; height: 100%; display: flex;
+  align-items: center; justify-content: center; padding: 42px;
+}
+.mesh-canvas {
+  width: min(92%, 800px); aspect-ratio: 16/10; border-radius: 21px;
+  position: relative; overflow: hidden;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.08),
+    0 4px 8px rgba(0,0,0,0.08),
+    0 8px 16px rgba(0,0,0,0.08),
+    0 16px 32px rgba(0,0,0,0.08),
+    0 32px 64px rgba(0,0,0,0.12),
+    0 0 0 1px rgba(255,255,255,0.04);
+}
+.mesh-blob {
+  position: absolute; border-radius: 50%; filter: blur(70px);
+}
+.mesh-blob-1 {
+  width: 65%; height: 75%; top: -15%; left: -8%;
+  background: #7A5C38; animation: mesh-a 14s ease-in-out infinite;
+}
+.mesh-blob-2 {
+  width: 55%; height: 65%; bottom: -18%; right: -12%;
+  background: #3b2a1a; animation: mesh-b 9s ease-in-out infinite;
+}
+.mesh-blob-3 {
+  width: 50%; height: 60%; top: 15%; right: 5%;
+  background: #5C4229; animation: mesh-c 21s ease-in-out infinite;
+}
+.mesh-blob-4 {
+  width: 40%; height: 45%; bottom: 8%; left: 18%;
+  background: #C4956A; opacity: 0.6; animation: mesh-d 7s ease-in-out infinite;
+}
+.mesh-blob-5 {
+  width: 30%; height: 35%; top: 40%; left: 40%;
+  background: #D4A574; opacity: 0.4; animation: mesh-e 11s ease-in-out infinite;
+}
+@keyframes mesh-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(50px, -30px) scale(1.08); }
+  66% { transform: translate(-25px, 40px) scale(0.95); }
+}
+@keyframes mesh-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-40px, -35px) scale(1.06); }
+}
+@keyframes mesh-c {
+  0%, 100% { transform: translate(0, 0) scale(1) rotate(0deg); }
+  33% { transform: translate(30px, 20px) scale(0.92) rotate(3deg); }
+  66% { transform: translate(-20px, -15px) scale(1.04) rotate(-2deg); }
+}
+@keyframes mesh-d {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(35px, -25px); }
+}
+@keyframes mesh-e {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-30px, 20px) scale(1.15); }
+}
+
+.mesh-content {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 2;
+  text-align: center; padding: 42px;
+}
+.mesh-overline {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  letter-spacing: 0.25em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); margin-bottom: 14px;
+}
+.mesh-title {
+  font-family: 'Cinzel', serif; font-size: clamp(2.4rem, 6vw, 5rem);
+  font-weight: 400; letter-spacing: 0.12em; color: white;
+  text-shadow: 0 2px 30px rgba(0,0,0,0.3);
+  line-height: 1.1;
+}
+.mesh-subtitle {
+  font-size: clamp(1rem, 2vw, 1.2rem); color: rgba(255,255,255,0.6);
+  font-weight: 300; max-width: 420px; line-height: 1.6; margin-top: 14px;
+}
+.mesh-cta {
+  display: inline-block; margin-top: 28px;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 12px 28px; border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 100px; color: rgba(255,255,255,0.8);
+  transition: all 0.6s var(--ease-arc);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  background: rgba(255,255,255,0.04);
+}
+.mesh-cta:hover {
+  border-color: rgba(255,255,255,0.5); color: white;
+  background: rgba(255,255,255,0.08);
+  box-shadow: 0 0 30px rgba(196, 149, 106, 0.15);
+}
+
+/* ══════════════════════════════════════════
+   2. FLOATING UI VIGNETTES
+   ══════════════════════════════════════════ */
+.vignette-stage {
+  perspective: 1200px; height: 100%; display: flex;
+  align-items: center; justify-content: center;
+  padding: 42px; position: relative;
+}
+
+.vp {
+  position: absolute; background: var(--surface-1);
+  border: 1px solid var(--ui-border); border-radius: 12px;
+  overflow: hidden; transform-style: preserve-3d;
+  transition: transform 1.2s var(--ease-enterprise);
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.06),
+    0 4px 8px rgba(0,0,0,0.06),
+    0 8px 16px rgba(0,0,0,0.06),
+    0 16px 32px rgba(0,0,0,0.08),
+    0 32px 64px rgba(0,0,0,0.12),
+    0 0 0 1px rgba(255,255,255,0.03);
+}
+
+/* Chrome bar */
+.vp-chrome {
+  display: flex; align-items: center; gap: 6px;
+  padding: 9px 12px; background: var(--surface-2);
+  border-bottom: 1px solid var(--ui-border);
+}
+.vp-dot { width: 9px; height: 9px; border-radius: 50%; }
+.vp-dot-r { background: #ff5f57; } .vp-dot-y { background: #ffbd2e; } .vp-dot-g { background: #28c840; }
+.vp-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--ui-text-muted); margin-left: 6px;
+}
+.vp-body { padding: 14px; }
+
+/* Layout positions */
+.vp-main {
+  width: 460px; z-index: 5;
+  transform: rotateY(-2deg) rotateX(1deg);
+}
+.vp-sidebar {
+  width: 240px; z-index: 2;
+  left: 6%; top: 15%;
+  transform: rotateY(7deg) rotateX(-3deg) translateZ(-35px);
+  opacity: 0.85;
+}
+.vp-activity {
+  width: 280px; z-index: 3;
+  right: 6%; top: 18%;
+  transform: rotateY(-5deg) rotateX(2deg) translateZ(-15px);
+  opacity: 0.9;
+}
+.vp-status {
+  width: 200px; z-index: 1;
+  left: 12%; bottom: 10%;
+  transform: rotateY(4deg) translateZ(-50px);
+  opacity: 0.7;
+}
+.vp-terminal {
+  width: 320px; z-index: 4;
+  right: 10%; bottom: 8%;
+  transform: rotateY(-3deg) rotateX(1deg) translateZ(-10px);
+  opacity: 0.88;
+}
+
+/* Dashboard panel content */
+.dash-row { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 12px; }
+.dash-metric {
+  font-family: 'JetBrains Mono', monospace; font-size: 2rem;
+  font-weight: 500; color: var(--ui-text-primary); line-height: 1;
+}
+.dash-label {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+  color: var(--ui-text-muted); margin-top: 3px;
+}
+.dash-badge {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.5rem;
+  padding: 3px 8px; border-radius: 100px;
+  background: rgba(52, 211, 153, 0.1); color: var(--status-green);
+}
+.dash-change {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--status-green); margin-top: 4px;
+}
+
+/* Mini chart */
+.vp-chart { width: 100%; height: 65px; margin-top: 10px; }
+.vp-chart svg { width: 100%; height: 100%; }
+.vp-chart-line {
+  fill: none; stroke: var(--warm-gold); stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke-dasharray: 500; stroke-dashoffset: 500;
+  transition: stroke-dashoffset 2.1s var(--ease-enterprise);
+}
+.vp-chart-line.drawn { stroke-dashoffset: 0; }
+.vp-chart-area { fill: url(#vpGrad); opacity: 0.12; }
+
+/* Stats row */
+.dash-stats { display: flex; gap: 10px; margin-top: 12px; }
+.dash-stat {
+  flex: 1; padding: 8px; background: var(--surface-2);
+  border-radius: 7px; border: 1px solid var(--ui-border);
+}
+.dash-stat-val {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.85rem;
+  color: var(--ui-text-primary); font-weight: 500;
+}
+.dash-stat-lbl {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.45rem;
+  color: var(--ui-text-muted); margin-top: 2px; text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* Nav items */
+.nav-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px; border-radius: 6px; margin-bottom: 2px;
+}
+.nav-item.active { background: rgba(122,92,56,0.12); }
+.nav-dot { width: 5px; height: 5px; border-radius: 50%; }
+.nav-text {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  color: var(--ui-text-tertiary);
+}
+.nav-item.active .nav-text { color: var(--warm-gold); }
+
+/* Activity items */
+.act-item {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 8px 0; border-bottom: 1px solid var(--ui-border);
+}
+.act-item:last-child { border-bottom: none; }
+.act-avatar {
+  width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+  background: linear-gradient(135deg, var(--accent), var(--warm-gold));
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'JetBrains Mono', monospace; font-size: 0.45rem; color: white;
+}
+.act-text {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem;
+  color: var(--ui-text-tertiary); line-height: 1.5;
+}
+.act-text strong { color: var(--ui-text-secondary); }
+.act-time {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.45rem;
+  color: var(--ui-text-muted); margin-top: 2px;
+}
+
+/* Status rows */
+.st-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 0; border-bottom: 1px solid var(--ui-border);
+}
+.st-row:last-child { border-bottom: none; }
+.st-left { display: flex; align-items: center; gap: 6px; }
+.st-dot { width: 6px; height: 6px; border-radius: 50%; }
+.st-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem; color: var(--ui-text-tertiary);
+}
+.st-val {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.55rem; color: var(--ui-text-muted);
+}
+
+/* Terminal mini */
+.term-line {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.6rem;
+  line-height: 1.8; color: var(--ui-text-tertiary);
+}
+.term-prompt { color: var(--warm-gold); }
+.term-success { color: var(--status-green); }
+.term-info { color: var(--status-blue); }
+.term-dim { color: var(--ui-text-muted); }
+
+/* ══════════════════════════════════════════
+   3. ANIMATED CODE BLOCK
+   ══════════════════════════════════════════ */
+.code-stage {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 63px;
+  align-items: center; padding: 42px; height: 100%;
+  max-width: 1300px; margin: 0 auto; width: 100%;
+}
+.code-info { padding-right: 21px; }
+.code-info h2 {
+  font-family: 'Cinzel', serif; font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+  font-weight: 400; letter-spacing: 0.06em; line-height: 1.2;
+  margin-bottom: 14px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(196,149,106,0.7));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.code-info p {
+  font-size: 1.15rem; color: var(--ui-text-secondary);
+  line-height: 1.7; font-weight: 300; margin-bottom: 28px;
+}
+.code-features { margin-top: 21px; }
+.code-feature {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+  color: var(--ui-text-tertiary); padding: 9px 0;
+  border-bottom: 1px solid var(--ui-border);
+  display: flex; align-items: center; gap: 10px;
+}
+.code-feature::before {
+  content: ''; width: 5px; height: 5px; border-radius: 50%;
+  background: var(--warm-gold); flex-shrink: 0;
+}
+
+/* Editor */
+.code-editor {
+  background: var(--surface-0); border-radius: 14px;
+  border: 1px solid var(--ui-border); overflow: hidden;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.06),
+    0 4px 8px rgba(0,0,0,0.06),
+    0 8px 16px rgba(0,0,0,0.06),
+    0 16px 32px rgba(0,0,0,0.08),
+    0 32px 64px rgba(0,0,0,0.12),
+    0 0 0 1px rgba(255,255,255,0.03);
+}
+.ce-tabs {
+  display: flex; background: var(--surface-2);
+  border-bottom: 1px solid var(--ui-border);
+}
+.ce-tab {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  padding: 9px 14px; color: var(--ui-text-muted);
+  border-right: 1px solid var(--ui-border);
+  display: flex; align-items: center; gap: 5px;
+}
+.ce-tab.active {
+  color: var(--ui-text-secondary); background: var(--surface-0);
+  border-bottom: 1px solid var(--surface-0); margin-bottom: -1px;
+}
+.ce-dot { width: 7px; height: 7px; border-radius: 2px; }
+.ce-body {
+  padding: 16px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; line-height: 1.75; min-height: 380px;
+}
+.ce-line { display: flex; gap: 14px; }
+.ln {
+  color: var(--ui-text-muted); user-select: none;
+  min-width: 22px; text-align: right; font-size: 0.65rem;
+}
+.lc { white-space: pre; }
+.sk { color: var(--syn-keyword); }
+.ss { color: var(--syn-string); }
+.sn { color: var(--syn-number); }
+.sc { color: var(--syn-comment); font-style: italic; }
+.sf { color: var(--syn-function); }
+.sv { color: var(--syn-variable); }
+.so { color: var(--syn-operator); }
+.typing-cursor {
+  display: inline-block; width: 2px; height: 1em;
+  background: var(--warm-gold); margin-left: 1px;
+  animation: blink 0.9s steps(2, start) infinite;
+  vertical-align: text-bottom;
+}
+@keyframes blink { to { opacity: 0; } }
+
+/* Terminal standalone */
+.terminal-block {
+  background: var(--surface-0); border-radius: 14px;
+  border: 1px solid var(--ui-border); overflow: hidden;
+  max-width: 700px; margin: 42px auto 0;
+  box-shadow:
+    0 2px 4px rgba(0,0,0,0.06),
+    0 4px 8px rgba(0,0,0,0.06),
+    0 8px 16px rgba(0,0,0,0.06),
+    0 16px 32px rgba(0,0,0,0.08),
+    0 32px 64px rgba(0,0,0,0.12),
+    0 0 0 1px rgba(255,255,255,0.03);
+}
+.terminal-chrome {
+  display: flex; align-items: center; gap: 6px;
+  padding: 10px 14px; background: var(--surface-2);
+  border-bottom: 1px solid var(--ui-border);
+}
+.terminal-title {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.65rem;
+  color: var(--ui-text-muted); margin-left: 8px;
+}
+.terminal-body {
+  padding: 16px; font-family: 'JetBrains Mono', monospace;
+  font-size: 0.75rem; line-height: 1.8; min-height: 240px;
+}
+
+/* ══════════════════════════════════════════
+   RESPONSIVE
+   ══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .code-stage { grid-template-columns: 1fr; gap: 42px; padding: 100px 28px; }
+  .code-info { padding-right: 0; }
+  .vp-sidebar, .vp-status { display: none; }
+  .vp-main { width: 380px; }
+  .vp-activity { width: 240px; right: 3%; }
+  .vp-terminal { width: 280px; right: 3%; }
+}
+@media (max-width: 768px) {
+  .graphic-section { min-height: auto; padding: 80px 0; }
+  .vp-activity, .vp-terminal { display: none; }
+  .vp-main { width: 90%; position: relative; left: auto; top: auto; transform: none; }
+  .vignette-stage { flex-direction: column; padding: 100px 21px; }
+  .mesh-stage { padding: 21px; }
+  .code-stage { padding: 80px 21px; }
+}
+</style>
+</head>
+<body>
+
+<div class="cursor-glow"></div>
+<div class="cursor-dot"></div>
+<div class="cursor-ring"></div>
+<div class="grain"></div>
+
+<!-- SVG defs -->
+<svg style="position:absolute;width:0;height:0;">
+  <defs>
+    <linearGradient id="vpGrad" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="var(--warm-gold)" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="var(--warm-gold)" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- ═══════════════════════════════════════
+     1. MESH GRADIENT — STELLAR
+     ═══════════════════════════════════════ -->
+<section class="graphic-section" id="stellar">
+  <div class="graphic-label">
+    <span class="graphic-number">01 / 03</span>
+    <span class="graphic-name">Mesh Gradient</span>
+    <span class="graphic-code-hint">5 blurred divs with staggered animation. CSS-only Stripe/Linear aesthetic. No canvas needed.</span>
+  </div>
+  <div class="mesh-stage">
+    <div class="mesh-canvas reveal">
+      <div class="mesh-blob mesh-blob-1"></div>
+      <div class="mesh-blob mesh-blob-2"></div>
+      <div class="mesh-blob mesh-blob-3"></div>
+      <div class="mesh-blob mesh-blob-4"></div>
+      <div class="mesh-blob mesh-blob-5"></div>
+      <div class="mesh-content">
+        <div class="mesh-overline">Arc Garde Presents</div>
+        <h1 class="mesh-title">STELLAR<br>GRAPHICS</h1>
+        <p class="mesh-subtitle">Code-based visuals that look like they were designed in Figma but built entirely from scratch</p>
+        <a href="#" class="mesh-cta">Explore the System</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     2. FLOATING UI VIGNETTES
+     ═══════════════════════════════════════ -->
+<section class="graphic-section" id="vignettes">
+  <div class="graphic-label">
+    <span class="graphic-number">02 / 03</span>
+    <span class="graphic-name">UI Vignettes</span>
+    <span class="graphic-code-hint">perspective: 1200px + preserve-3d. Product panels floating in 3D space with mouse parallax. The product IS the graphic.</span>
+  </div>
+  <div class="vignette-stage" id="vignetteStage">
+
+    <!-- MAIN: Dashboard -->
+    <div class="vp vp-main">
+      <div class="vp-chrome">
+        <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+        <span class="vp-label">analytics.arcgarde.com</span>
+      </div>
+      <div class="vp-body">
+        <div class="dash-row">
+          <div>
+            <div class="dash-metric" data-counter="47850" data-prefix="$">$0</div>
+            <div class="dash-label">Monthly Recurring Revenue</div>
+            <div class="dash-change">+12.4% from last month</div>
+          </div>
+          <div class="dash-badge">Live</div>
+        </div>
+        <div class="vp-chart">
+          <svg viewBox="0 0 420 65" preserveAspectRatio="none">
+            <path class="vp-chart-area" d="M0,52 L35,48 70,42 105,45 140,34 175,38 210,28 245,31 280,20 315,24 350,14 385,18 420,8 420,65 0,65 Z"/>
+            <path class="vp-chart-line" d="M0,52 L35,48 70,42 105,45 140,34 175,38 210,28 245,31 280,20 315,24 350,14 385,18 420,8"/>
+          </svg>
+        </div>
+        <div class="dash-stats">
+          <div class="dash-stat">
+            <div class="dash-stat-val" data-counter="1247">0</div>
+            <div class="dash-stat-lbl">Active Users</div>
+          </div>
+          <div class="dash-stat">
+            <div class="dash-stat-val">98.7%</div>
+            <div class="dash-stat-lbl">Uptime</div>
+          </div>
+          <div class="dash-stat">
+            <div class="dash-stat-val" data-counter="342">0</div>
+            <div class="dash-stat-lbl">Conversions</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="vp vp-sidebar">
+      <div class="vp-chrome">
+        <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+        <span class="vp-label">navigation</span>
+      </div>
+      <div class="vp-body" style="padding: 6px;">
+        <div class="nav-item active"><div class="nav-dot" style="background:var(--warm-gold);"></div><span class="nav-text">Dashboard</span></div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--status-blue);"></div><span class="nav-text">Analytics</span></div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--status-green);"></div><span class="nav-text">Projects</span></div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--status-purple);"></div><span class="nav-text">Deployments</span></div>
+        <div class="nav-item"><div class="nav-dot" style="background:var(--status-amber);"></div><span class="nav-text">Settings</span></div>
+      </div>
+    </div>
+
+    <!-- ACTIVITY -->
+    <div class="vp vp-activity">
+      <div class="vp-chrome">
+        <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+        <span class="vp-label">activity</span>
+      </div>
+      <div class="vp-body" style="padding: 10px;">
+        <div class="act-item">
+          <div class="act-avatar">Q</div>
+          <div>
+            <div class="act-text"><strong>Quinten</strong> deployed to production</div>
+            <div class="act-time">2 min ago</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-avatar">C</div>
+          <div>
+            <div class="act-text"><strong>Claude</strong> passed IDWIP scan</div>
+            <div class="act-time">14 min ago</div>
+          </div>
+        </div>
+        <div class="act-item">
+          <div class="act-avatar">A</div>
+          <div>
+            <div class="act-text"><strong>System</strong> cleared quality gate G3</div>
+            <div class="act-time">21 min ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATUS -->
+    <div class="vp vp-status">
+      <div class="vp-chrome">
+        <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+        <span class="vp-label">status</span>
+      </div>
+      <div class="vp-body" style="padding: 8px 10px;">
+        <div class="st-row"><div class="st-left"><div class="st-dot" style="background:var(--status-green);"></div><span class="st-name">API</span></div><span class="st-val">42ms</span></div>
+        <div class="st-row"><div class="st-left"><div class="st-dot" style="background:var(--status-green);"></div><span class="st-name">CDN</span></div><span class="st-val">7ms</span></div>
+        <div class="st-row"><div class="st-left"><div class="st-dot" style="background:var(--status-amber);"></div><span class="st-name">Queue</span></div><span class="st-val">213ms</span></div>
+      </div>
+    </div>
+
+    <!-- TERMINAL MINI -->
+    <div class="vp vp-terminal">
+      <div class="vp-chrome">
+        <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+        <span class="vp-label">ag-deploy</span>
+      </div>
+      <div class="vp-body" id="vigTerminal" style="padding: 10px 12px;">
+        <!-- Typed by JS -->
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     3. ANIMATED CODE + TERMINAL
+     ═══════════════════════════════════════ -->
+<section class="graphic-section" id="codeblock">
+  <div class="graphic-label">
+    <span class="graphic-number">03 / 03</span>
+    <span class="graphic-name">Code + Terminal</span>
+    <span class="graphic-code-hint">Recursive setTimeout typing + syntax spans. Terminal streaming. Product as living code.</span>
+  </div>
+
+  <div class="code-stage">
+    <div class="code-info reveal">
+      <h2>Ship with<br>Confidence</h2>
+      <p>Deploy your entire stack with a single configuration. Type-safe, validated, instant. The code writes itself.</p>
+      <div class="code-features">
+        <div class="code-feature">Automatic type inference</div>
+        <div class="code-feature">Zero-config deployments</div>
+        <div class="code-feature">Real-time sync protocol</div>
+        <div class="code-feature">Built-in IDWIP validation</div>
+        <div class="code-feature">End-to-end quality gates</div>
+      </div>
+    </div>
+
+    <div>
+      <div class="code-editor reveal">
+        <div class="ce-tabs">
+          <div class="ce-tab active"><div class="ce-dot" style="background:var(--syn-function);"></div>config.ts</div>
+          <div class="ce-tab"><div class="ce-dot" style="background:var(--syn-keyword);"></div>deploy.ts</div>
+          <div class="ce-tab"><div class="ce-dot" style="background:var(--syn-string);"></div>schema.ts</div>
+        </div>
+        <div class="ce-body" id="codeTarget"></div>
+      </div>
+
+      <div class="terminal-block reveal" style="margin-top: 21px;">
+        <div class="terminal-chrome">
+          <div class="vp-dot vp-dot-r"></div><div class="vp-dot vp-dot-y"></div><div class="vp-dot vp-dot-g"></div>
+          <span class="terminal-title">ag-deploy</span>
+        </div>
+        <div class="terminal-body" id="terminalTarget"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════ -->
+<script>
+(function() {
+  'use strict';
+
+  // ── CURSOR ──
+  const cg = document.querySelector('.cursor-glow');
+  const cd = document.querySelector('.cursor-dot');
+  const cr = document.querySelector('.cursor-ring');
+  let mx = 0, my = 0, dxC = 0, dyC = 0, rxC = 0, ryC = 0, gxC = 0, gyC = 0;
+  document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+  (function ac() {
+    dxC += (mx - dxC) * 0.7; dyC += (my - dyC) * 0.7;
+    rxC += (mx - rxC) * 0.14; ryC += (my - ryC) * 0.14;
+    gxC += (mx - gxC) * 0.07; gyC += (my - gyC) * 0.07;
+    cd.style.left = dxC + 'px'; cd.style.top = dyC + 'px';
+    cr.style.left = rxC + 'px'; cr.style.top = ryC + 'px';
+    cg.style.left = gxC + 'px'; cg.style.top = gyC + 'px';
+    requestAnimationFrame(ac);
+  })();
+
+  document.querySelectorAll('.vp, .mesh-canvas, .mesh-cta, .code-editor, .terminal-block').forEach(el => {
+    el.addEventListener('mouseenter', () => cr.classList.add('hovering'));
+    el.addEventListener('mouseleave', () => cr.classList.remove('hovering'));
+  });
+
+  // ── REVEAL ──
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        // Chart draw
+        e.target.querySelectorAll('.vp-chart-line').forEach(l =>
+          setTimeout(() => l.classList.add('drawn'), 300)
+        );
+        // Counters
+        e.target.querySelectorAll('[data-counter]').forEach(el => animCounter(el));
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.reveal, .vignette-stage').forEach(el => obs.observe(el));
+
+  // ── COUNTER ──
+  function animCounter(el) {
+    if (el.dataset.counted) return;
+    el.dataset.counted = 'true';
+    const target = parseInt(el.dataset.counter);
+    const prefix = el.dataset.prefix || '';
+    const dur = 2100;
+    const start = performance.now();
+    function ease(t) { return 1 - Math.pow(1 - t, 3); }
+    function tick(now) {
+      const p = Math.min((now - start) / dur, 1);
+      el.textContent = prefix + Math.floor(ease(p) * target).toLocaleString();
+      if (p < 1) requestAnimationFrame(tick);
+      else el.textContent = prefix + target.toLocaleString();
+    }
+    requestAnimationFrame(tick);
+  }
+
+  // ── VIGNETTE PARALLAX ──
+  const vigStage = document.getElementById('vignetteStage');
+  const vpanels = vigStage.querySelectorAll('.vp');
+  vigStage.addEventListener('mousemove', e => {
+    const r = vigStage.getBoundingClientRect();
+    const nx = (e.clientX - r.left) / r.width - 0.5;
+    const ny = (e.clientY - r.top) / r.height - 0.5;
+    vpanels.forEach((p, i) => {
+      const f = (i + 1) * 3.5;
+      // Keep base CSS transform, add parallax offset
+      const base = getComputedStyle(p).transform;
+      p.style.transform = p.dataset.base + ` translate(${nx * f}px, ${ny * f}px)`;
+    });
+  });
+  // Store base transforms
+  vpanels.forEach(p => {
+    p.dataset.base = window.getComputedStyle(p).transform !== 'none'
+      ? window.getComputedStyle(p).transform : '';
+    // Read the CSS transform as the base
+    const cs = getComputedStyle(p);
+    p.dataset.base = p.style.cssText.includes('transform')
+      ? '' : '';
+    // Actually let's just store the raw CSS value
+    // We need to read the inline style before JS touches it
+  });
+  // Simpler: store the transform from CSS classes
+  const baseTransforms = {
+    'vp-main': 'rotateY(-2deg) rotateX(1deg)',
+    'vp-sidebar': 'rotateY(7deg) rotateX(-3deg) translateZ(-35px)',
+    'vp-activity': 'rotateY(-5deg) rotateX(2deg) translateZ(-15px)',
+    'vp-status': 'rotateY(4deg) translateZ(-50px)',
+    'vp-terminal': 'rotateY(-3deg) rotateX(1deg) translateZ(-10px)'
+  };
+  vpanels.forEach(p => {
+    for (const [cls, tf] of Object.entries(baseTransforms)) {
+      if (p.classList.contains(cls)) { p.dataset.base = tf; break; }
+    }
+  });
+
+  // ── VIGNETTE TERMINAL ──
+  const vigTermLines = [
+    { t: '$ ag deploy --prod', c: '' },
+    { t: '  Validating config...', c: 'term-info' },
+    { t: '  IDWIP scan .... PASSED', c: 'term-success' },
+    { t: '  Deployed to vercel', c: 'term-success' },
+    { t: '$ _', c: 'term-prompt' }
+  ];
+  const vigTerm = document.getElementById('vigTerminal');
+  let vigTermStarted = false;
+
+  const vigTermObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting && !vigTermStarted) {
+      vigTermStarted = true;
+      let i = 0;
+      function addLine() {
+        if (i >= vigTermLines.length) return;
+        const el = document.createElement('div');
+        el.className = 'term-line' + (vigTermLines[i].c ? ' ' + vigTermLines[i].c : '');
+        el.textContent = vigTermLines[i].t || '\u00A0';
+        vigTerm.appendChild(el);
+        i++;
+        setTimeout(addLine, vigTermLines[i - 1].t.includes('$') ? 300 : 180);
+      }
+      setTimeout(addLine, 700);
+    }
+  }, { threshold: 0.3 });
+  vigTermObs.observe(document.getElementById('vignettes'));
+
+  // ── CODE TYPING ──
+  const codeLines = [
+    { n: 1, t: [{ t: 'import', c: 'sk' }, { t: ' { ', c: 'so' }, { t: 'defineConfig', c: 'sf' }, { t: ' } ', c: 'so' }, { t: 'from', c: 'sk' }, { t: " '@arcgarde/core'", c: 'ss' }] },
+    { n: 2, t: [] },
+    { n: 3, t: [{ t: '// Enterprise deployment config', c: 'sc' }] },
+    { n: 4, t: [{ t: 'export', c: 'sk' }, { t: ' ', c: '' }, { t: 'default', c: 'sk' }, { t: ' ', c: '' }, { t: 'defineConfig', c: 'sf' }, { t: '({', c: 'so' }] },
+    { n: 5, t: [{ t: '  project', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'stellar-graphics'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 6, t: [{ t: '  framework', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'static'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 7, t: [{ t: '  quality', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'enterprise'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 8, t: [] },
+    { n: 9, t: [{ t: '  build', c: 'sf' }, { t: ': {', c: 'so' }] },
+    { n: 10, t: [{ t: '    output', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'dist'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 11, t: [{ t: '    minify', c: 'sv' }, { t: ': ', c: 'so' }, { t: 'true', c: 'sn' }, { t: ',', c: 'so' }] },
+    { n: 12, t: [{ t: '    validation', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'idwip'", c: 'ss' }] },
+    { n: 13, t: [{ t: '  }', c: 'so' }, { t: ',', c: 'so' }] },
+    { n: 14, t: [] },
+    { n: 15, t: [{ t: '  deploy', c: 'sf' }, { t: ': {', c: 'so' }] },
+    { n: 16, t: [{ t: '    provider', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'vercel'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 17, t: [{ t: '    region', c: 'sv' }, { t: ': ', c: 'so' }, { t: "'iad1'", c: 'ss' }, { t: ',', c: 'so' }] },
+    { n: 18, t: [{ t: '    autoScale', c: 'sv' }, { t: ': ', c: 'so' }, { t: 'true', c: 'sn' }] },
+    { n: 19, t: [{ t: '  }', c: 'so' }] },
+    { n: 20, t: [{ t: '})', c: 'so' }] },
+  ];
+
+  const codeTarget = document.getElementById('codeTarget');
+  let codeStarted = false;
+
+  function startCode() {
+    if (codeStarted) return;
+    codeStarted = true;
+    let li = 0;
+
+    function typeLine() {
+      if (li >= codeLines.length) {
+        codeTarget.querySelectorAll('.typing-cursor').forEach(c => c.remove());
+        // Start terminal after code finishes
+        setTimeout(startTerminal, 300);
+        return;
+      }
+      const line = codeLines[li];
+      const el = document.createElement('div'); el.className = 'ce-line';
+      const num = document.createElement('span'); num.className = 'ln'; num.textContent = line.n;
+      const cnt = document.createElement('span'); cnt.className = 'lc';
+      el.appendChild(num); el.appendChild(cnt);
+      codeTarget.querySelectorAll('.typing-cursor').forEach(c => c.remove());
+      codeTarget.appendChild(el);
+
+      if (!line.t.length) { cnt.innerHTML = '&nbsp;'; li++; setTimeout(typeLine, 50); return; }
+
+      let ti = 0, ci = 0;
+      const cur = document.createElement('span'); cur.className = 'typing-cursor';
+
+      function typeChar() {
+        if (ti >= line.t.length) { cur.remove(); li++; setTimeout(typeLine, 70); return; }
+        const tok = line.t[ti];
+        if (ci === 0) {
+          const s = document.createElement('span');
+          if (tok.c) s.className = tok.c;
+          s.dataset.ti = ti;
+          cnt.appendChild(s);
+        }
+        const s = cnt.querySelector(`[data-ti="${ti}"]`);
+        s.textContent = tok.t.slice(0, ci + 1);
+        cur.remove(); cnt.appendChild(cur);
+        ci++;
+        if (ci >= tok.t.length) { ci = 0; ti++; }
+        setTimeout(typeChar, 15 + Math.random() * 20);
+      }
+      typeChar();
+    }
+    typeLine();
+  }
+
+  const codeObs = new IntersectionObserver(entries => {
+    if (entries[0].isIntersecting) startCode();
+  }, { threshold: 0.2 });
+  codeObs.observe(document.getElementById('codeblock'));
+
+  // ── TERMINAL TYPING ──
+  const termLines = [
+    { t: '$ ag deploy --project stellar-graphics', c: '' },
+    { t: '', c: '' },
+    { t: '  Validating configuration...', c: 'term-info' },
+    { t: '  Running IDWIP pre-flight scan...', c: 'term-info' },
+    { t: '  DVAR check .......... PASSED', c: 'term-success' },
+    { t: '  CURB check .......... PASSED', c: 'term-success' },
+    { t: '  Responsive check .... PASSED', c: 'term-success' },
+    { t: '  SEO validation ...... PASSED', c: 'term-success' },
+    { t: '', c: '' },
+    { t: '  Creating deployment branch...', c: 'term-info' },
+    { t: '  Pushing to Arc-Garde-Project/stellar-graphics', c: 'term-dim' },
+    { t: '  Opening PR #42 for review...', c: 'term-info' },
+    { t: '', c: '' },
+    { t: '  Deployed to stellar-graphics.vercel.app', c: 'term-success' },
+    { t: '  CRM status updated: Deployed', c: 'term-success' },
+    { t: '', c: '' },
+    { t: '$ _', c: 'term-prompt' }
+  ];
+
+  const termTarget = document.getElementById('terminalTarget');
+  let termStarted = false;
+
+  function startTerminal() {
+    if (termStarted) return;
+    termStarted = true;
+    let i = 0;
+
+    function addLine() {
+      if (i >= termLines.length) return;
+      const el = document.createElement('div');
+      el.className = 'term-line' + (termLines[i].c ? ' ' + termLines[i].c : '');
+      el.textContent = termLines[i].t || '\u00A0';
+      termTarget.appendChild(el);
+      i++;
+      const d = termLines[i - 1].t.includes('$') ? 300 :
+                termLines[i - 1].t.includes('PASSED') ? 210 : 100;
+      setTimeout(addLine, d);
+    }
+    addLine();
+  }
+
+})();
+</script>
+</body>
+</html>
